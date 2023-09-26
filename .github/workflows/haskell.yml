@@ -39,7 +39,9 @@ jobs:
         sudo sh -c "echo 'deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
         sudo apt update -y
         sudo ACCEPT_EULA=Y apt install -y apt-transport-https ca-certificates curl gnupg2 lsb-release libkrb5-3 libpq5 libnuma1 unixodbc-dev msodbcsql18  postgresql-client-15
-
+    - name: Setup verions
+      run: echo "v2.33.4" > ./server/CURRENT_VERSION
+      
     - name: Install dependencies
       run: |
         ln -s cabal/dev.project cabal.project.local
