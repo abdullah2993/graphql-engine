@@ -1,0 +1,51 @@
+name: Haskell CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: haskell/actions/setup@v2
+      with:
+        ghc-version: '9.4.5'
+
+    - name: Cache
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-cabal
+      with:
+        path: ~/.cabal
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+    - name: Install os dependencies
+      run: |
+        sudo sh -c 'curl -fsS "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" > /etc/apt/sources.list.d/mssql-release.list'
+        sudo sh -c 'curl -fsS 'https://packages.microsoft.com/keys/microsoft.asc' | apt-key add -'
+        sudo sh -c 'curl -s https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -'
+        sudo sh -c "echo 'deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
+        sudo apt update -y
+        sudo ACCEPT_EULA=Y apt install -y apt-transport-https ca-certificates curl gnupg2 lsb-release libkrb5-3 libpq5 libnuma1 unixodbc-dev msodbcsql18  postgresql-client-15
+
+    - name: Install dependencies
+      run: |
+        ln -s cabal/dev.project cabal.project.local
+        cabal new-update
+        
+    - name: Build
+      run: cabal new-build graphql-engine
+    - name: Run tests
+      run: cabal test all
